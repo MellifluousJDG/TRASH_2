@@ -20,12 +20,16 @@ main <- function(cmd_arguments) {
   log_messages <- file.path(cmd_arguments$output_folder, paste0(basename(cmd_arguments$fasta_file), "_main_log_file.txt")) #TODO make into a flag
   log_messages <- ""
 
-  cl <- makeCluster(cmd_arguments$cores_no,
-                    # outfile="",
-                    homogeneous = TRUE)
-  clusterEvalQ(cl, .libPaths(c(.libPaths(), gsub("src", "R_libs", getwd()))))
-  clusterEvalQ(cl, sink())
-  registerDoParallel(cl)
+  if (cmd_arguments$cores_no == 1) {
+    foreach::registerDoSEQ()
+  } else {
+    cl <- makeCluster(cmd_arguments$cores_no,
+                      # outfile="",
+                      homogeneous = TRUE)
+    clusterEvalQ(cl, .libPaths(c(.libPaths(), gsub("src", "R_libs", getwd()))))
+    clusterEvalQ(cl, sink())
+    registerDoParallel(cl)
+  }
   # foreach::foreach (i = 1 : getDoParWorkers()) %dopar% {
   #   # set.seed(0) # Sets random seed for reproducibility
   #   # setwd(cmd_arguments$output_folder)
@@ -620,6 +624,6 @@ main <- function(cmd_arguments) {
   }
   if (log_messages != "") cat("14 / 14 \n## Done ##\nTime:         ", date(), "\n", file = log_messages, append = TRUE)
 
-  stopCluster(cl)
+  if (cmd_arguments$cores_no > 1) stopCluster(cl)
   gc()
 }
